@@ -4,30 +4,81 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>注音練習</title>
+
 <style>
-  body { font-family:"Noto Sans TC","微軟正黑體",sans-serif; background:#FFF8E7; text-align:center; padding:20px;}
-  h1 { color:#D2691E; margin:0 0 10px;}
+  /* ===== 字體設定 ===== */
+  @font-face {
+    font-family: 'BpmfIansui';
+    src: url('BpmfIansui-Regular.ttf') format('truetype');
+    font-display: swap;
+  }
+
+  /* ===== 主體樣式 ===== */
+  body {
+    font-family:'BpmfIansui',"Noto Sans TC","微軟正黑體",sans-serif;
+    background:linear-gradient(180deg,#E6F0FF 0%,#F7FAFF 100%);
+    text-align:center;
+    padding:20px;
+    color:#1A365D;
+  }
+  h1 { color:#1E40AF; margin:0 0 10px; text-shadow:1px 1px 2px rgba(0,0,0,0.05);}
   #toolbar { margin:10px 0 16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
   #word { font-size:52px; margin:18px 0; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;}
-  #progress { font-size:18px; margin:6px 0; color:#444;}
-  #selected { font-size:32px; margin:14px 0; color:#0a58ca; min-height:38px;}
+  #progress { font-size:18px; margin:6px 0; color:#2563EB;}
+  #selected { font-size:32px; margin:14px 0; color:#1D4ED8; min-height:38px;}
   #buttons { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px 0 18px;}
-  .btn { font-size:26px; padding:10px 16px; border-radius:12px; border:none; background:#FFB347; cursor:pointer;}
-  .btn:hover { background:#FF8C00;}
-  .btn-ghost { background:#fff; border:2px solid #FFB347;}
+  .btn {
+    font-size:26px;
+    padding:10px 16px;
+    border-radius:12px;
+    border:none;
+    background:linear-gradient(145deg,#3B82F6,#2563EB);
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 4px 10px rgba(37,99,235,0.3);
+    transition:transform 0.1s, box-shadow 0.2s;
+  }
+  .btn:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(37,99,235,0.4);}
+  .btn-ghost {
+    background:#fff;
+    border:2px solid #3B82F6;
+    color:#1E40AF;
+    box-shadow:none;
+  }
+  .btn-ghost:hover { background:#DBEAFE; }
   #feedback { font-size:26px; margin-top:8px; min-height:32px;}
-  .ok { color:#138a36;} .err { color:#c1121f;} .hint { color:#0a58ca;}
+  .ok { color:#059669; } .err { color:#DC2626; } .hint { color:#2563EB;}
 
-  /* 結算面板 */
-  #overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;}
-  #panel{background:#fff;border-radius:16px;max-width:360px;width:90%;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-align:left;}
-  #panel h2{margin:0 0 10px;font-size:22px;color:#333;}
-  #panel p{margin:8px 0;color:#444;line-height:1.6;white-space:pre-line;}
+  /* ===== 結算面板 ===== */
+  #overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.4);
+    display:none;align-items:center;justify-content:center;
+  }
+  #panel{
+    background:#fff;
+    border-radius:16px;
+    max-width:360px;
+    width:90%;
+    padding:22px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+    text-align:left;
+  }
+  #panel h2{margin:0 0 10px;font-size:22px;color:#1E3A8A;}
+  #panel p{margin:8px 0;color:#1E40AF;line-height:1.6;white-space:pre-line;}
   #panel .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
-  #panel button{font-size:16px;padding:8px 14px;border-radius:10px;border:none;background:#FFB347;cursor:pointer;}
-  #panel button:hover{background:#FF8C00;}
+  #panel button{
+    font-size:16px;
+    padding:8px 14px;
+    border-radius:10px;
+    border:none;
+    background:linear-gradient(145deg,#3B82F6,#2563EB);
+    color:#fff;
+    cursor:pointer;
+  }
+  #panel button:hover{background:linear-gradient(145deg,#60A5FA,#3B82F6);}
 </style>
 </head>
+
 <body>
   <h1>注音練習</h1>
 
@@ -66,7 +117,7 @@ const ROUND_TOTAL = 10;
 let roundCount = 0;
 let roundCorrect = 0;
 
-/* ===== 干擾生成（同聲母/同韻母優先，含防無限迴圈） ===== */
+/* ===== 干擾生成 ===== */
 function getDistractors(correct) {
   const need = Math.max(3, correct.length * 2);
   const distractors = [];
@@ -89,7 +140,7 @@ function getDistractors(correct) {
   return distractors;
 }
 
-/* ===== 出題＋自動播音（隨機且不與當前重複） ===== */
+/* ===== 出題＋自動播音 ===== */
 function nextWord() {
   selected = [];
   let idx;
@@ -103,10 +154,10 @@ function nextWord() {
   document.getElementById("feedback").textContent = "";
   updateProgressText();
   renderOptions();
-  playTTS(); // 自動播音
+  playTTS();
 }
 
-/* 顯示進度文字 */
+/* 顯示進度 */
 function updateProgressText() {
   if (isChallenge) {
     const shown = Math.min(roundCount + 1, ROUND_TOTAL);
@@ -154,7 +205,6 @@ function submitAnswer() {
       setTimeout(nextWord, 800);
     }
   } else {
-    // 自由練習
     if (ans === correct) {
       setFeedback("✅ 正確！","ok");
       setTimeout(nextWord, 800);
@@ -182,7 +232,7 @@ function showChallengeSummary() {
 }
 
 function restartRound() {
-  isChallenge = true;      // 直接再開一輪
+  isChallenge = true;
   roundCount = 0;
   roundCorrect = 0;
   document.getElementById("overlay").style.display = "none";
@@ -203,7 +253,7 @@ function playTTS(){
   }
 }
 
-/* 初始化：先進入自由練習一題 */
+/* 初始化 */
 nextWord();
 </script>
 
