@@ -88,16 +88,24 @@
   #panel h2{margin:0 0 10px;font-size:22px;color:#1E3A8A;}
   #panel p{margin:8px 0;color:#1E40AF;line-height:1.6;white-space:pre-line;}
   #panel .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
-  #panel button{
-    font-size:16px;
-    padding:8px 14px;
-    border-radius:10px;
+
+  /* 🩵 統一彈窗按鈕風格 */
+  #panel button {
+    font-family:'BpmfIansui','Noto Sans TC','PingFang TC',sans-serif !important;
+    font-size:18px;
+    padding:10px 18px;
+    border-radius:12px;
     border:none;
     background:linear-gradient(145deg,#3B82F6,#2563EB);
     color:#fff;
     cursor:pointer;
+    box-shadow:0 4px 10px rgba(37,99,235,0.3);
+    transition:transform 0.1s, box-shadow 0.2s;
   }
-  #panel button:hover{background:linear-gradient(145deg,#60A5FA,#3B82F6);}
+  #panel button:hover {
+    transform:translateY(-2px);
+    box-shadow:0 6px 14px rgba(37,99,235,0.4);
+  }
 </style>
 </head>
 
@@ -180,7 +188,7 @@ function renderOptions() {
 
 function submitAnswer() {
   if (!words[current]) return;
-  if (selected.length === 0) { setFeedback("先選注音再提交喔～","hint"); return; }
+  if (selected.length === 0) { setFeedback("先選注音再送出喔～","hint"); return; }
   const ans = selected.join(" ");
   const correct = words[current].zhuyin.join(" ");
   if (isChallenge) {
@@ -236,7 +244,7 @@ nextWord();
     <h2>挑戰結束 🎉</h2>
     <p id="summary"></p>
     <div class="actions">
-      <button onclick="restartRound()">再挑戰一輪</button>
+      <button onclick="restartRound()">再挑戰一次</button>
       <button onclick="(document.getElementById('overlay').style.display='none', isChallenge=false, setFeedback('回到自由練習','ok'), updateProgressText())">返回自由練習</button>
     </div>
   </div>
