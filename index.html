@@ -42,14 +42,133 @@
   <div id="feedback"></div>
   <div id="score">連續答對：0 | 正確率：0%</div>
 
-  <!-- 題庫 -->
-<script src="words.js"></script>
-<script src="zhuyin-all.js"></script>
-
+  <!-- 外部題庫與音節庫 -->
+  <script src="words.js"></script>
+  <script src="zhuyin-all.js"></script>
 
 <script>
 let current = -1;
 let selected = [];
 let total = 0, correctCount = 0, streak = 0;
 
+/* 干擾生成 */
+function getDistractors(correct) {
+  const need = Math.max(3, correct.length * 2);
+  const distractors = [];
+  const maxTries = 150; 
+  let tries = 0;
+  const firstSet = correct.map(s => s[0]);
+  const lastSet  = correct.map(s => s[s.length - 1]);
 
+  while (distractors.length < need && tries < maxTries) {
+    tries++;
+    const c = allSyllables[Math.floor(Math.random() * allSyllables.length)];
+    if (!correct.includes(c) && !distractors.includes(c)) {
+      if (firstSet.includes(c[0]) || lastSet.includes(c[c.length - 1])) {
+        distractors.push(c);
+      }
+    }
+  }
+  while (distractors.length < need) {
+    const c = allSyllables[Math.floor(Math.random() * allSyllables.length)];
+    if (!correct.includes(c) && !distractors.includes(c)) distractors.push(c);
+  }
+  return distractors;
+}
+
+/* 出題＋自動播音 */
+function nextWord() {
+  selected = [];
+  let idx;
+  do { idx = Math.floor(Math.random() * words.length); } 
+  while (idx === current && words.length > 1);
+  current = idx;
+
+  const w = words[current];
+  document.getElementById("wordText").textContent = w.char;
+  document.getElementById("selected").textContent = "";
+  document.getElementById("feedback").textContent = "";
+  document.getElementById("progress").textContent = `第 ${total + 1} 題`;
+  renderOptions();
+
+  playTTS(); // 自動播放朗讀
+}
+
+/* 建立選項按鈕 */
+function renderOptions() {
+  const btnDiv = document.getElementById("buttons");
+  btnDiv.innerHTML = "";
+  const correct = words[current].zhuyin;
+  let options = [...correct, ...getDistractors(correct)];
+  options.sort(() => Math.random() - 0.5);
+
+  options.forEach(syl => {
+    const btn = document.createElement("button");
+    btn.textContent = syl;
+    btn.className = "btn";
+    btn.onclick = () => { selected.push(syl); updateSelected(); };
+    btnDiv.appendChild(btn);
+  });
+}
+
+function updateSelected() {
+  document.getElementById("selected").textContent = selected.join(" ");
+}
+
+/* 提交 */
+function submitAnswer() {
+  const ans = selected.join(" ");
+  const correct = words[current].zhuyin.join(" ");
+  total++;
+  if (ans === correct) {
+    streak++;
+    correctCount++;
+    setFeedback("✅ 正確！","ok");
+    setTimeout(nextWord, 800);
+  } else {
+    streak = 0;
+    setFeedback(`❌ 錯誤，正確答案：${correct}`,"err");
+  }
+  updateScore();
+}
+
+function setFeedback(text, type) {
+  const el = document.getElementById("feedback");
+  el.textContent = text;
+  el.className = type;
+}
+
+function showHint() {
+  setFeedback(`提示首個注音：${words[current].zhuyin[0]}`,"hint");
+}
+
+function clearSelected() {
+  selected = [];
+  updateSelected();
+  setFeedback("","");
+}
+
+/* 更新分數 */
+function updateScore() {
+  const rate = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+  document.getElementById("score").textContent = `連續答對：${streak} | 正確率：${rate}%`;
+}
+
+/* 播音功能 */
+function playTTS() {
+  const w = words[current];
+  if (!w) return;
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(w.char);
+    u.lang = "zh-TW";
+    speechSynthesis.speak(u);
+  }
+}
+
+/* 初始化 */
+nextWord();
+updateScore();
+</script>
+</body>
+</html>
