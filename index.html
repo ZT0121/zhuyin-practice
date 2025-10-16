@@ -43,6 +43,9 @@ let total = 0;
 let correctCount = 0;
 let streak = 0;
 
+// 全部注音音節，作為干擾來源
+const allSyllables = ["ㄅㄚ˙","ㄅㄚˋ","ㄇㄚ","ㄇㄚ˙","ㄇㄠ","ㄇㄧ","ㄆㄧㄥˊ","ㄍㄨㄛˇ","ㄒㄧㄠˇ","ㄆㄥˊ","ㄧㄡˇ","ㄉㄚˋ","ㄅㄠˋ","ㄍㄚˋ","ㄊㄚ˙","ㄌㄧˇ"];
+
 function nextWord(){
   selected = [];
   const index = Math.floor(Math.random()*words.length);
@@ -56,9 +59,20 @@ function nextWord(){
 function createButtons(){
   const btnDiv = document.getElementById("buttons");
   btnDiv.innerHTML = "";
-  // 先複製注音，再加一些干擾符號
-  const options = [...words[current].zhuyin, "ㄊ","ㄌ","ㄍ"];
+  const correct = words[current].zhuyin;
+  let options = [...correct];
+
+  // 加入隨機干擾音節
+  while(options.length < correct.length + 3){ // 干擾3個
+    const rand = allSyllables[Math.floor(Math.random()*allSyllables.length)];
+    if(!options.includes(rand)){
+      options.push(rand);
+    }
+  }
+
+  // 打亂順序
   options.sort(()=>Math.random()-0.5);
+
   options.forEach(symbol=>{
     const btn = document.createElement("button");
     btn.textContent = symbol;
