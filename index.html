@@ -2,78 +2,105 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>注音練習小遊戲</title>
+<title>注音練習</title>
 <style>
   body { font-family:"微軟正黑體", sans-serif; background:#FFF8E7; text-align:center; padding:20px;}
   h1 {color:#D2691E;}
-  #character {font-size:80px; margin:30px 0;}
-  input {font-size:40px; text-align:center; width:300px; padding:10px;}
-  button {font-size:20px; margin:10px; padding:10px 20px; border-radius:10px; border:none; background-color:#FFB347; cursor:pointer;}
-  button:hover {background-color:#FF8C00;}
+  #word {font-size:50px; margin:30px 0;}
+  #selected {font-size:40px; margin:20px 0; color:blue;}
+  .btn {font-size:30px; margin:5px; padding:10px 15px; border-radius:10px; border:none; background-color:#FFB347; cursor:pointer;}
+  .btn:hover {background-color:#FF8C00;}
   #feedback {font-size:30px; margin-top:20px;}
   #score {font-size:20px; margin-top:10px;}
 </style>
 </head>
 <body>
-<h1>注音練習小遊戲</h1>
-<div id="character">字詞</div>
-<input type="text" id="input" placeholder="輸入完整注音ㄅㄆㄇ..." autofocus>
+<h1>注音練習</h1>
+<div id="word">詞語</div>
+<div id="selected"></div>
+<div id="buttons"></div>
 <div>
-  <button onclick="checkAnswer()">提交</button>
-  <button onclick="nextQuestion()">下一題</button>
-  <button onclick="showHint()">提示</button>
+  <button onclick="submitAnswer()">提交</button>
+  <button onclick="nextWord()">下一題</button>
+  <button onclick="showHint()">提示首音</button>
 </div>
 <div id="feedback"></div>
 <div id="score">連續答對：0 | 正確率：0%</div>
 
-<!-- 引入題庫 -->
-<script src="words.js"></script>
 <script>
+// 簡單字庫
+const words = [
+  {char:"爸爸", zhuyin:["ㄅㄚˋ","ㄅㄚ˙"]},
+  {char:"媽媽", zhuyin:["ㄇㄚ","ㄇㄚ˙"]},
+  {char:"貓咪", zhuyin:["ㄇㄠ","ㄇㄧ"]},
+  {char:"蘋果", zhuyin:["ㄆㄧㄥˊ","ㄍㄨㄛˇ"]},
+  {char:"小朋友", zhuyin:["ㄒㄧㄠˇ","ㄆㄥˊ","ㄧㄡˇ"]}
+];
+
 let current = 0;
+let selected = [];
 let total = 0;
 let correctCount = 0;
 let streak = 0;
 
-function nextQuestion() {
-  const index = Math.floor(Math.random() * words.length);
+function nextWord(){
+  selected = [];
+  const index = Math.floor(Math.random()*words.length);
   current = index;
-  document.getElementById("character").textContent = words[current].char;
-  document.getElementById("input").value = "";
+  document.getElementById("word").textContent = words[current].char;
+  document.getElementById("selected").textContent = "";
   document.getElementById("feedback").textContent = "";
-  document.getElementById("input").focus();
+  createButtons();
 }
 
-function checkAnswer() {
-  const input = document.getElementById("input").value.trim();
-  const correct = words[current].zhuyin;
+function createButtons(){
+  const btnDiv = document.getElementById("buttons");
+  btnDiv.innerHTML = "";
+  // 先複製注音，再加一些干擾符號
+  const options = [...words[current].zhuyin, "ㄊ","ㄌ","ㄍ"];
+  options.sort(()=>Math.random()-0.5);
+  options.forEach(symbol=>{
+    const btn = document.createElement("button");
+    btn.textContent = symbol;
+    btn.className = "btn";
+    btn.onclick = ()=>{selected.push(symbol); updateSelected();}
+    btnDiv.appendChild(btn);
+  });
+}
+
+function updateSelected(){
+  document.getElementById("selected").textContent = selected.join(" ");
+}
+
+function submitAnswer(){
+  const answer = selected.join(" ");
+  const correct = words[current].zhuyin.join(" ");
   total++;
-  if(input === correct) {
+  if(answer === correct){
     streak++;
     correctCount++;
-    document.getElementById("feedback").textContent = "✅ 正確！";
-    document.getElementById("feedback").style.color = "green";
+    document.getElementById("feedback").textContent="✅ 正確！";
+    document.getElementById("feedback").style.color="green";
   } else {
-    streak = 0;
-    document.getElementById("feedback").textContent = `❌ 錯誤，正確答案：${correct}`;
-    document.getElementById("feedback").style.color = "red";
+    streak=0;
+    document.getElementById("feedback").textContent=`❌ 錯誤，正確答案：${correct}`;
+    document.getElementById("feedback").style.color="red";
   }
   updateScore();
 }
 
-function showHint() {
-  const firstChar = words[current].zhuyin.split(" ")[0];
-  document.getElementById("feedback").textContent = `提示首個注音：${firstChar}`;
-  document.getElementById("feedback").style.color = "blue";
+function showHint(){
+  document.getElementById("feedback").textContent = `提示首個注音：${words[current].zhuyin[0]}`;
+  document.getElementById("feedback").style.color="blue";
 }
 
-function updateScore() {
-  const rate = total > 0 ? Math.round((correctCount/total)*100) : 0;
+function updateScore(){
+  const rate = total>0?Math.round((correctCount/total)*100):0;
   document.getElementById("score").textContent = `連續答對：${streak} | 正確率：${rate}%`;
 }
 
-// 初始題目
-nextQuestion();
+// 初始化
+nextWord();
 </script>
 </body>
 </html>
-
