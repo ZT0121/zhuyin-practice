@@ -6,7 +6,6 @@
 <title>注音練習</title>
 
 <style>
-  /* ===== 字體設定 ===== */
   @font-face {
     font-family: 'BpmfIansui';
     src: url('BpmfIansui-Regular.ttf') format('truetype');
@@ -18,7 +17,6 @@
     font-display: swap;
   }
 
-  /* ===== 主體樣式 ===== */
   body {
     font-family:'BpmfIansui',"Noto Sans TC","微軟正黑體",sans-serif;
     background:linear-gradient(180deg,#E6F0FF 0%,#F7FAFF 100%);
@@ -27,14 +25,19 @@
     color:#1A365D;
   }
 
-  /* 題目使用 Iansui 字體（不顯示注音） */
   #wordText {
     font-family:'Iansui',"Noto Sans TC","微軟正黑體",sans-serif !important;
+    font-size:72px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
+  }
+
+  #buttons button, #selected, #feedback, #progress {
+    font-family:'BpmfIansui',"Noto Sans TC","微軟正黑體",sans-serif !important;
   }
 
   h1 { color:#1E40AF; margin:0 0 10px; text-shadow:1px 1px 2px rgba(0,0,0,0.05);}
   #toolbar { margin:10px 0 16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
-  #word { font-size:52px; margin:18px 0; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;}
+  #word { margin:18px 0; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;}
   #progress { font-size:18px; margin:6px 0; color:#2563EB;}
   #selected { font-size:32px; margin:14px 0; color:#1D4ED8; min-height:38px;}
   #buttons { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px 0 18px;}
@@ -58,9 +61,8 @@
   }
   .btn-ghost:hover { background:#DBEAFE; }
   #feedback { font-size:26px; margin-top:8px; min-height:32px;}
-  .ok { color:#059669; } .err { color:#DC2626; } .hint { color:#2563EB;}
+  .ok { color:#059669; } .err { color:#DC2626; }
 
-  /* ===== 結算面板 ===== */
   #overlay{
     position:fixed;inset:0;background:rgba(0,0,0,.4);
     display:none;align-items:center;justify-content:center;
@@ -96,7 +98,6 @@
   <div id="toolbar">
     <button class="btn" onclick="submitAnswer()">提交</button>
     <button class="btn" onclick="nextWord()">下一題</button>
-    <button class="btn btn-ghost" onclick="showHint()">提示首音</button>
     <button class="btn btn-ghost" onclick="clearSelected()">清除</button>
     <button class="btn" onclick="startChallenge()">🚀 挑戰模式</button>
   </div>
@@ -112,35 +113,19 @@
   <div id="buttons"></div>
   <div id="feedback"></div>
 
-  <!-- 題庫與音節庫 -->
   <script src="words.js"></script>
   <script src="zhuyin-all.js"></script>
 
 <script>
 let current = -1;
 let selected = [];
-
-/* 挑戰模式 */
 let isChallenge = false;
 const ROUND_TOTAL = 10;
-let roundCount = 0;
-let roundCorrect = 0;
+let roundCount = 0, roundCorrect = 0;
 
 function getDistractors(correct) {
   const need = Math.max(3, correct.length * 2);
   const distractors = [];
-  const maxTries = 150; 
-  let tries = 0;
-  const firstSet = correct.map(s => s[0]);
-  const lastSet  = correct.map(s => s[s.length - 1]);
-
-  while (distractors.length < need && tries < maxTries) {
-    tries++;
-    const c = allSyllables[Math.floor(Math.random() * allSyllables.length)];
-    if (!correct.includes(c) && !distractors.includes(c)) {
-      if (firstSet.includes(c[0]) || lastSet.includes(c[c.length - 1])) distractors.push(c);
-    }
-  }
   while (distractors.length < need) {
     const c = allSyllables[Math.floor(Math.random() * allSyllables.length)];
     if (!correct.includes(c) && !distractors.includes(c)) distractors.push(c);
@@ -151,10 +136,8 @@ function getDistractors(correct) {
 function nextWord() {
   selected = [];
   let idx;
-  do { idx = Math.floor(Math.random() * words.length); }
-  while (idx === current && words.length > 1);
+  do { idx = Math.floor(Math.random() * words.length); } while (idx === current);
   current = idx;
-
   const w = words[current];
   document.getElementById("wordText").textContent = w.char;
   document.getElementById("selected").textContent = "";
@@ -168,9 +151,7 @@ function updateProgressText() {
   if (isChallenge) {
     const shown = Math.min(roundCount + 1, ROUND_TOTAL);
     document.getElementById("progress").textContent = `挑戰模式：第 ${shown} / ${ROUND_TOTAL} 題`;
-  } else {
-    document.getElementById("progress").textContent = "自由練習";
-  }
+  } else document.getElementById("progress").textContent = "自由練習";
 }
 
 function renderOptions() {
@@ -191,39 +172,24 @@ function renderOptions() {
 function submitAnswer() {
   if (!words[current]) return;
   if (selected.length === 0) { setFeedback("先選注音再提交喔～","hint"); return; }
-
   const ans = selected.join(" ");
   const correct = words[current].zhuyin.join(" ");
-
   if (isChallenge) {
     roundCount++;
-    if (ans === correct) {
-      roundCorrect++;
-      setFeedback("✅ 正確！","ok");
-    } else {
-      setFeedback(`❌ 錯誤，正確答案：${correct}`,"err");
-    }
-    if (roundCount >= ROUND_TOTAL) {
-      setTimeout(showChallengeSummary, 500);
-    } else {
-      setTimeout(nextWord, 800);
-    }
+    if (ans === correct) { roundCorrect++; setFeedback("✅ 正確！","ok"); }
+    else setFeedback(`❌ 錯誤，正確答案：${correct}`,"err");
+    if (roundCount >= ROUND_TOTAL) setTimeout(showChallengeSummary, 600);
+    else setTimeout(nextWord, 800);
   } else {
-    if (ans === correct) {
-      setFeedback("✅ 正確！","ok");
-      setTimeout(nextWord, 800);
-    } else {
-      setFeedback(`❌ 錯誤，正確答案：${correct}`,"err");
-    }
+    if (ans === correct) { setFeedback("✅ 正確！","ok"); setTimeout(nextWord, 800); }
+    else setFeedback(`❌ 錯誤，正確答案：${correct}`,"err");
   }
-  updateProgressText();
 }
 
 function startChallenge() {
   isChallenge = true;
-  roundCount = 0;
-  roundCorrect = 0;
-  setFeedback("🚀 挑戰開始！共 10 題","hint");
+  roundCount = 0; roundCorrect = 0;
+  setFeedback("🚀 挑戰開始！共 10 題","ok");
   nextWord();
 }
 
@@ -242,8 +208,7 @@ function restartRound() {
   nextWord();
 }
 
-function setFeedback(text, type){ const el=document.getElementById("feedback"); el.textContent=text; el.className=type; }
-function showHint(){ setFeedback(`提示首個注音：${words[current].zhuyin[0]}`,"hint"); }
+function setFeedback(t,cls){const e=document.getElementById("feedback");e.textContent=t;e.className=cls;}
 function clearSelected(){ selected=[]; document.getElementById("selected").textContent=""; setFeedback("",""); }
 function playTTS(){
   const w = words[current]; if (!w) return;
@@ -254,7 +219,6 @@ function playTTS(){
     speechSynthesis.speak(u);
   }
 }
-
 nextWord();
 </script>
 
@@ -264,7 +228,7 @@ nextWord();
     <p id="summary"></p>
     <div class="actions">
       <button onclick="restartRound()">再挑戰一輪</button>
-      <button onclick="(document.getElementById('overlay').style.display='none', isChallenge=false, setFeedback('回到自由練習','hint'), updateProgressText())">返回自由練習</button>
+      <button onclick="(document.getElementById('overlay').style.display='none', isChallenge=false, setFeedback('回到自由練習','ok'), updateProgressText())">返回自由練習</button>
     </div>
   </div>
 </div>
