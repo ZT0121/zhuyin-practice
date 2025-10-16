@@ -53,38 +53,26 @@ function getDistractors(correct) {
   const maxTries = 100; // 防止無限迴圈
   let tries = 0;
   while (distractors.length < correct.length * 2 && tries < maxTries) {
-    tries++;
     const candidate = allSyllables[Math.floor(Math.random() * allSyllables.length)];
     if (!correct.includes(candidate) && !distractors.includes(candidate)) {
       const firstCharCorrect = correct.map(s => s[0]);
       const lastCharCorrect = correct.map(s => s[s.length - 1]);
-      if (
-        firstCharCorrect.includes(candidate[0]) ||
-        lastCharCorrect.includes(candidate[candidate.length - 1])
-      ) {
+      if (firstCharCorrect.includes(candidate[0]) || lastCharCorrect.includes(candidate[candidate.length - 1])) {
         distractors.push(candidate);
       }
     }
-  }
-  // 若還不夠數量，就隨機補滿
-  while (distractors.length < correct.length * 2) {
-    const candidate = allSyllables[Math.floor(Math.random() * allSyllables.length)];
-    if (!correct.includes(candidate) && !distractors.includes(candidate)) {
-      distractors.push(candidate);
-    }
+    tries++;
   }
   return distractors;
 }
 
-}
-
-// 下一題：隨機但不重複目前題目
-function nextWord(){
+// 下一題
+function nextWord() {
   selected = [];
   let index;
   do {
-    index = Math.floor(Math.random()*words.length);
-  } while(index === current && words.length > 1);
+    index = Math.floor(Math.random() * words.length);
+  } while (index === current && words.length > 1);
   current = index;
 
   document.getElementById("word").textContent = words[current].char;
@@ -93,56 +81,57 @@ function nextWord(){
   createButtons();
 }
 
-function createButtons(){
+// 產生選項
+function createButtons() {
   const btnDiv = document.getElementById("buttons");
   btnDiv.innerHTML = "";
   const correct = words[current].zhuyin;
   let options = [...correct, ...getDistractors(correct)];
-  options.sort(()=>Math.random()-0.5); // 打亂順序
+  options.sort(() => Math.random() - 0.5);
 
-  options.forEach(symbol=>{
+  options.forEach(symbol => {
     const btn = document.createElement("button");
     btn.textContent = symbol;
     btn.className = "btn";
-    btn.onclick = ()=>{selected.push(symbol); updateSelected();}
+    btn.onclick = () => { selected.push(symbol); updateSelected(); };
     btnDiv.appendChild(btn);
   });
 }
 
-function updateSelected(){
+function updateSelected() {
   document.getElementById("selected").textContent = selected.join(" ");
 }
 
-function submitAnswer(){
+function submitAnswer() {
   const answer = selected.join(" ");
   const correct = words[current].zhuyin.join(" ");
   total++;
-  if(answer === correct){
+  if (answer === correct) {
     streak++;
     correctCount++;
-    document.getElementById("feedback").textContent="✅ 正確！";
-    document.getElementById("feedback").style.color="green";
+    document.getElementById("feedback").textContent = "✅ 正確！";
+    document.getElementById("feedback").style.color = "green";
   } else {
-    streak=0;
-    document.getElementById("feedback").textContent=`❌ 錯誤，正確答案：${correct}`;
-    document.getElementById("feedback").style.color="red";
+    streak = 0;
+    document.getElementById("feedback").textContent = `❌ 錯誤，正確答案：${correct}`;
+    document.getElementById("feedback").style.color = "red";
   }
   updateScore();
 }
 
-function showHint(){
+function showHint() {
   document.getElementById("feedback").textContent = `提示首個注音：${words[current].zhuyin[0]}`;
-  document.getElementById("feedback").style.color="blue";
+  document.getElementById("feedback").style.color = "blue";
 }
 
-function clearSelected(){
+function clearSelected() {
   selected = [];
   updateSelected();
   document.getElementById("feedback").textContent = "";
 }
 
-function updateScore(){
-  const rate = total>0?Math.round((correctCount/total)*100):0;
+function updateScore() {
+  const rate = total > 0 ? Math.round((correctCount / total) * 100) : 0;
   document.getElementById("score").textContent = `連續答對：${streak} | 正確率：${rate}%`;
 }
 
