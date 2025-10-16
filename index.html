@@ -8,7 +8,7 @@
   body { font-family:"Noto Sans TC","微軟正黑體",sans-serif; background:#FFF8E7; text-align:center; padding:20px;}
   h1 { color:#D2691E; margin:0 0 10px;}
   #toolbar { margin:10px 0 16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
-  #word { font-size:52px; margin:18px 0;}
+  #word { font-size:52px; margin:18px 0; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;}
   #progress, #score { font-size:18px; margin:6px 0; color:#444;}
   #selected { font-size:32px; margin:14px 0; color:#0a58ca; min-height:38px;}
   #buttons { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:10px 0 18px;}
@@ -17,15 +17,6 @@
   .btn-ghost { background:#fff; border:2px solid #FFB347;}
   #feedback { font-size:26px; margin-top:8px; min-height:32px;}
   .ok { color:#138a36;} .err { color:#c1121f;} .hint { color:#0a58ca;}
-
-  /* 簡易結算面板 */
-  #overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;}
-  #panel{background:#fff;border-radius:16px;max-width:360px;width:90%;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.25);text-align:left;}
-  #panel h2{margin:0 0 10px;font-size:22px;color:#333;}
-  #panel p{margin:8px 0;color:#444;line-height:1.6;}
-  #panel .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
-  #panel button{font-size:16px;padding:8px 14px;border-radius:10px;border:none;background:#FFB347;cursor:pointer;}
-  #panel button:hover{background:#FF8C00;}
 </style>
 </head>
 <body>
@@ -36,202 +27,32 @@
     <button class="btn" onclick="nextWord()">下一題</button>
     <button class="btn btn-ghost" onclick="showHint()">提示首音</button>
     <button class="btn btn-ghost" onclick="clearSelected()">清除</button>
-    <label style="display:flex;align-items:center;gap:6px;">
-      <input type="checkbox" id="ttsToggle" /> 🔊語音朗讀
-    </label>
   </div>
 
-  <div id="progress">第 1 / 10 題</div>
-  <div id="word">詞語</div>
+  <div id="progress">第 1 題</div>
+
+  <!-- 題目＋播音按鈕 -->
+  <div id="word">
+    <span id="wordText">詞語</span>
+    <button id="playBtn" class="btn btn-ghost" onclick="playTTS()">🔊 再聽一次</button>
+  </div>
+
   <div id="selected"></div>
   <div id="buttons"></div>
   <div id="feedback"></div>
-  <div id="score">連續答對：0（最佳 0） | 正確率：0%</div>
-
-  <!-- 結算面板 -->
-  <div id="overlay">
-    <div id="panel">
-      <h2>本輪結束 🎉</h2>
-      <p id="summary"></p>
-      <div class="actions">
-        <button onclick="restartRound()">再來一輪</button>
-      </div>
-    </div>
-  </div>
+  <div id="score">連續答對：0 | 正確率：0%</div>
 
   <!-- 題庫 -->
   <script src="words.js"></script>
 
 <script>
-/* 狀態 */
 let current = -1;
 let selected = [];
-let total = 0;           // 累計答題（跨輪）
-let correctCount = 0;    // 累計答對
-let streak = 0;
-let bestStreak = 0;
+let total = 0, correctCount = 0, streak = 0;
 
-let roundTotal = 10;     // 一輪題數
-let roundCount = 0;      // 本輪已答
-let roundCorrect = 0;
-
-/* 干擾來源（可擴充） */
+/* 干擾來源 */
 const allSyllables = [
   "ㄅㄚ˙","ㄅㄚˋ","ㄅㄚˇ","ㄅㄚ","ㄆㄚˋ","ㄆㄚ","ㄅㄛˋ",
   "ㄇㄚ","ㄇㄚ˙","ㄇㄚˇ","ㄇㄛ","ㄇㄧ","ㄇㄠ",
   "ㄆㄧㄥˊ","ㄍㄨㄛˇ","ㄒㄧㄠˇ","ㄆㄥˊ","ㄧㄡˇ",
-  "ㄉㄚˋ","ㄅㄠˋ","ㄍㄚˋ","ㄊㄚ˙","ㄌㄧˇ","ㄍㄨㄛ","ㄒㄧㄠ","ㄆㄥ"
-];
-
-/* 工具：挑干擾（同聲母或同韻母優先，含防無限迴圈） */
-function getDistractors(correct) {
-  const need = Math.max(3, correct.length * 2);
-  const distractors = [];
-  const maxTries = 120;
-  let tries = 0;
-
-  const firstSet = correct.map(s => s[0]);
-  const lastSet  = correct.map(s => s[s.length - 1]);
-
-  while (distractors.length < need && tries < maxTries) {
-    tries++;
-    const candidate = allSyllables[Math.floor(Math.random() * allSyllables.length)];
-    if (!correct.includes(candidate) && !distractors.includes(candidate)) {
-      if (firstSet.includes(candidate[0]) || lastSet.includes(candidate[candidate.length - 1])) {
-        distractors.push(candidate);
-      }
-    }
-  }
-  // 若還不足，隨機補滿
-  while (distractors.length < need) {
-    const candidate = allSyllables[Math.floor(Math.random() * allSyllables.length)];
-    if (!correct.includes(candidate) && !distractors.includes(candidate)) {
-      distractors.push(candidate);
-    }
-  }
-  return distractors;
-}
-
-/* 出題：隨機且不與當前重複 */
-function nextWord() {
-  selected = [];
-  let index;
-  do {
-    index = Math.floor(Math.random() * words.length);
-  } while (index === current && words.length > 1);
-  current = index;
-
-  const w = words[current];
-  document.getElementById("word").textContent = w.char;
-  if (document.getElementById("ttsToggle").checked && "speechSynthesis" in window) {
-    const u = new SpeechSynthesisUtterance(w.char);
-    u.lang = "zh-TW";
-    speechSynthesis.cancel();
-    speechSynthesis.speak(u);
-  }
-
-  document.getElementById("selected").textContent = "";
-  document.getElementById("feedback").textContent = "";
-  renderOptions();
-  updateProgress();
-}
-
-/* 渲染選項 */
-function renderOptions() {
-  const btnDiv = document.getElementById("buttons");
-  btnDiv.innerHTML = "";
-  const correct = words[current].zhuyin;
-  let options = [...correct, ...getDistractors(correct)];
-  options.sort(() => Math.random() - 0.5);
-
-  options.forEach(symbol => {
-    const btn = document.createElement("button");
-    btn.textContent = symbol;
-    btn.className = "btn";
-    btn.onclick = () => { selected.push(symbol); updateSelected(); };
-    btnDiv.appendChild(btn);
-  });
-}
-
-function updateSelected() {
-  document.getElementById("selected").textContent = selected.join(" ");
-}
-
-function submitAnswer() {
-  const ans = selected.join(" ");
-  const correct = words[current].zhuyin.join(" ");
-  total++;
-  roundCount++;
-
-  if (ans === correct) {
-    streak++;
-    if (streak > bestStreak) bestStreak = streak;
-    correctCount++;
-    roundCorrect++;
-    setFeedback("✅ 正確！", "ok");
-    // 自動下一題
-    if (roundCount >= roundTotal) {
-      setTimeout(showSummary, 500);
-    } else {
-      setTimeout(nextWord, 800);
-    }
-  } else {
-    streak = 0;
-    setFeedback(`❌ 錯誤，正確答案：${correct}`, "err");
-  }
-  updateScore();
-  updateProgress();
-
-  if (roundCount >= roundTotal && ans !== correct) {
-    // 若最後一題答錯也要結算
-    setTimeout(showSummary, 500);
-  }
-}
-
-function setFeedback(text, type) {
-  const el = document.getElementById("feedback");
-  el.textContent = text;
-  el.className = type === "ok" ? "ok" : (type === "hint" ? "hint" : "err");
-}
-
-function showHint() {
-  setFeedback(`提示首個注音：${words[current].zhuyin[0]}`, "hint");
-}
-
-function clearSelected() {
-  selected = [];
-  updateSelected();
-  setFeedback("", "");
-}
-
-function updateScore() {
-  const rate = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-  document.getElementById("score").textContent =
-    `連續答對：${streak}（最佳 ${bestStreak}） | 正確率：${rate}%`;
-}
-
-function updateProgress() {
-  document.getElementById("progress").textContent = `第 ${Math.min(roundCount + 1, roundTotal)} / ${roundTotal} 題`;
-}
-
-/* 結算面板 */
-function showSummary() {
-  const rate = roundCount > 0 ? Math.round((roundCorrect / roundCount) * 100) : 0;
-  document.getElementById("summary").textContent =
-    `本輪成績：${roundCorrect} / ${roundCount} 題，正確率 ${rate}%。\n最長連擊（本輪外累計）：${bestStreak}`;
-  document.getElementById("overlay").style.display = "flex";
-}
-
-function restartRound() {
-  roundCount = 0;
-  roundCorrect = 0;
-  document.getElementById("overlay").style.display = "none";
-  nextWord();
-}
-
-/* 初始化 */
-nextWord();
-updateScore();
-</script>
-</body>
-</html>
+  "ㄉㄚˋ","ㄅㄠˋ","ㄍㄚˋ","ㄊㄚ˙","ㄌ
