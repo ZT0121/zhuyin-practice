@@ -50,17 +50,32 @@ const allSyllables = ["ㄅㄚ˙","ㄅㄚˋ","ㄆㄚˋ","ㄅㄛˋ","ㄇㄚ","ㄇ�
 // 工具：找干擾音節
 function getDistractors(correct) {
   const distractors = [];
-  while(distractors.length < correct.length*2){
-    const candidate = allSyllables[Math.floor(Math.random()*allSyllables.length)];
-    if(!correct.includes(candidate) && !distractors.includes(candidate)){
-      const firstCharCorrect = correct.map(s=>s[0]);
-      const lastCharCorrect = correct.map(s=>s[s.length-1]);
-      if(firstCharCorrect.includes(candidate[0]) || lastCharCorrect.includes(candidate[candidate.length-1])){
+  const maxTries = 100; // 防止無限迴圈
+  let tries = 0;
+  while (distractors.length < correct.length * 2 && tries < maxTries) {
+    tries++;
+    const candidate = allSyllables[Math.floor(Math.random() * allSyllables.length)];
+    if (!correct.includes(candidate) && !distractors.includes(candidate)) {
+      const firstCharCorrect = correct.map(s => s[0]);
+      const lastCharCorrect = correct.map(s => s[s.length - 1]);
+      if (
+        firstCharCorrect.includes(candidate[0]) ||
+        lastCharCorrect.includes(candidate[candidate.length - 1])
+      ) {
         distractors.push(candidate);
       }
     }
   }
+  // 若還不夠數量，就隨機補滿
+  while (distractors.length < correct.length * 2) {
+    const candidate = allSyllables[Math.floor(Math.random() * allSyllables.length)];
+    if (!correct.includes(candidate) && !distractors.includes(candidate)) {
+      distractors.push(candidate);
+    }
+  }
   return distractors;
+}
+
 }
 
 // 下一題：隨機但不重複目前題目
