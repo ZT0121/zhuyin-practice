@@ -12,6 +12,11 @@
     src: url('BpmfIansui-Regular.ttf') format('truetype');
     font-display: swap;
   }
+  @font-face {
+    font-family: 'Iansui';
+    src: url('Iansui-Regular.ttf') format('truetype');
+    font-display: swap;
+  }
 
   /* ===== 主體樣式 ===== */
   body {
@@ -21,6 +26,12 @@
     padding:20px;
     color:#1A365D;
   }
+
+  /* 題目使用 Iansui 字體（不顯示注音） */
+  #wordText {
+    font-family:'Iansui',"Noto Sans TC","微軟正黑體",sans-serif !important;
+  }
+
   h1 { color:#1E40AF; margin:0 0 10px; text-shadow:1px 1px 2px rgba(0,0,0,0.05);}
   #toolbar { margin:10px 0 16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
   #word { font-size:52px; margin:18px 0; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;}
@@ -92,7 +103,6 @@
 
   <div id="progress">自由練習</div>
 
-  <!-- 題目＋播音按鈕 -->
   <div id="word">
     <span id="wordText">詞語</span>
     <button id="playBtn" class="btn btn-ghost" onclick="playTTS()">🔊 再聽一次</button>
@@ -107,7 +117,6 @@
   <script src="zhuyin-all.js"></script>
 
 <script>
-/* ===== 狀態 ===== */
 let current = -1;
 let selected = [];
 
@@ -117,7 +126,6 @@ const ROUND_TOTAL = 10;
 let roundCount = 0;
 let roundCorrect = 0;
 
-/* ===== 干擾生成 ===== */
 function getDistractors(correct) {
   const need = Math.max(3, correct.length * 2);
   const distractors = [];
@@ -140,7 +148,6 @@ function getDistractors(correct) {
   return distractors;
 }
 
-/* ===== 出題＋自動播音 ===== */
 function nextWord() {
   selected = [];
   let idx;
@@ -157,7 +164,6 @@ function nextWord() {
   playTTS();
 }
 
-/* 顯示進度 */
 function updateProgressText() {
   if (isChallenge) {
     const shown = Math.min(roundCount + 1, ROUND_TOTAL);
@@ -167,7 +173,6 @@ function updateProgressText() {
   }
 }
 
-/* 建立選項 */
 function renderOptions() {
   const btnDiv = document.getElementById("buttons");
   btnDiv.innerHTML = "";
@@ -183,7 +188,6 @@ function renderOptions() {
   });
 }
 
-/* ===== 提交答案 ===== */
 function submitAnswer() {
   if (!words[current]) return;
   if (selected.length === 0) { setFeedback("先選注音再提交喔～","hint"); return; }
@@ -215,7 +219,6 @@ function submitAnswer() {
   updateProgressText();
 }
 
-/* ===== 挑戰模式控制 ===== */
 function startChallenge() {
   isChallenge = true;
   roundCount = 0;
@@ -239,7 +242,6 @@ function restartRound() {
   nextWord();
 }
 
-/* ===== 其他功能 ===== */
 function setFeedback(text, type){ const el=document.getElementById("feedback"); el.textContent=text; el.className=type; }
 function showHint(){ setFeedback(`提示首個注音：${words[current].zhuyin[0]}`,"hint"); }
 function clearSelected(){ selected=[]; document.getElementById("selected").textContent=""; setFeedback("",""); }
@@ -253,11 +255,9 @@ function playTTS(){
   }
 }
 
-/* 初始化 */
 nextWord();
 </script>
 
-<!-- 結算面板 -->
 <div id="overlay">
   <div id="panel">
     <h2>挑戰結束 🎉</h2>
