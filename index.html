@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>注音練習</title>
+<title>注音點選練習（混淆版）</title>
 <style>
   body { font-family:"微軟正黑體", sans-serif; background:#FFF8E7; text-align:center; padding:20px;}
   h1 {color:#D2691E;}
@@ -15,7 +15,7 @@
 </style>
 </head>
 <body>
-<h1>注音練習</h1>
+<h1>注音點選練習（混淆版）</h1>
 <div id="word">詞語</div>
 <div id="selected"></div>
 <div id="buttons"></div>
@@ -29,7 +29,7 @@
 <div id="score">連續答對：0 | 正確率：0%</div>
 
 <script>
-// 簡單字庫
+// 字庫
 const words = [
   {char:"爸爸", zhuyin:["ㄅㄚˋ","ㄅㄚ˙"]},
   {char:"媽媽", zhuyin:["ㄇㄚ","ㄇㄚ˙"]},
@@ -44,8 +44,26 @@ let total = 0;
 let correctCount = 0;
 let streak = 0;
 
-// 全部注音音節，作為干擾來源
-const allSyllables = ["ㄅㄚ˙","ㄅㄚˋ","ㄇㄚ","ㄇㄚ˙","ㄇㄠ","ㄇㄧ","ㄆㄧㄥˊ","ㄍㄨㄛˇ","ㄒㄧㄠˇ","ㄆㄥˊ","ㄧㄡˇ","ㄉㄚˋ","ㄅㄠˋ","ㄍㄚˋ","ㄊㄚ˙","ㄌㄧˇ"];
+// 全部注音音節，方便挑選干擾（含聲母和韻母）
+const allSyllables = ["ㄅㄚ˙","ㄅㄚˋ","ㄆㄚˋ","ㄅㄛˋ","ㄇㄚ","ㄇㄚ˙","ㄇㄛ","ㄇㄧ","ㄇㄠ","ㄆㄧㄥˊ","ㄍㄨㄛˇ","ㄒㄧㄠˇ","ㄆㄥˊ","ㄧㄡˇ","ㄉㄚˋ","ㄅㄠˋ","ㄍㄚˋ","ㄊㄚ˙","ㄌㄧˇ"];
+
+// 工具：找干擾音節
+function getDistractors(correct) {
+  const distractors = [];
+  while(distractors.length < correct.length*2){
+    const candidate = allSyllables[Math.floor(Math.random()*allSyllables.length)];
+    // 避免重複正確或已選干擾
+    if(!correct.includes(candidate) && !distractors.includes(candidate)){
+      // 同聲母或同韻母增加混淆
+      const firstCharCorrect = correct.map(s=>s[0]);
+      const lastCharCorrect = correct.map(s=>s[s.length-1]);
+      if(firstCharCorrect.includes(candidate[0]) || lastCharCorrect.includes(candidate[candidate.length-1])){
+        distractors.push(candidate);
+      }
+    }
+  }
+  return distractors;
+}
 
 function nextWord(){
   selected = [];
@@ -61,15 +79,7 @@ function createButtons(){
   const btnDiv = document.getElementById("buttons");
   btnDiv.innerHTML = "";
   const correct = words[current].zhuyin;
-  let options = [...correct];
-
-  // 加入隨機干擾音節
-  while(options.length < correct.length + 3){ // 干擾3個
-    const rand = allSyllables[Math.floor(Math.random()*allSyllables.length)];
-    if(!options.includes(rand)){
-      options.push(rand);
-    }
-  }
+  let options = [...correct, ...getDistractors(correct)];
 
   // 打亂順序
   options.sort(()=>Math.random()-0.5);
